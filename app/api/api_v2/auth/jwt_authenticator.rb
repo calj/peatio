@@ -79,7 +79,7 @@ module APIv2
       def from_barong_payload(payload)
         Member.find_or_initialize_by(email: fetch_email(payload)).tap do |member|
           member.transaction do
-            member.level    = Member::Levels.from_numerical_barong_level(payload.fetch(:level).to_i)
+            member.level    = payload.fetch(:level).to_i
             member.disabled = payload.fetch(:state).to_s != 'active'
             member.save!
             member.authentications.find_or_initialize_by(provider: 'barong', uid: fetch_uid(payload)).save!
