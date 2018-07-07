@@ -101,51 +101,44 @@ module CoinAPI
     #   – https://ethereum.stackexchange.com/questions/25389/getting-transaction-history-for-a-particular-account
     #   – https://github.com/ethereum/go-ethereum/issues/2104#issuecomment-168748944
     #   – https://github.com/ethereum/web3.js/issues/580
-    def each_batch_of_deposits(raise:, **options)
-      blocks_limit       = options.fetch(:blocks_limit) { 0 }
-      transactions_limit = options.fetch(:transactions_limit) { 0 }
-      collected          = []
-      latest_block_n     = latest_block_number
-      current_block_n    = latest_block_n
-      latest_block_json  = nil
-      current_block_json = nil
-      transactions_n     = 0
 
-      while current_block_n > 0
-        break unless blocks_limit.zero? || (latest_block_n - current_block_n) <= blocks_limit
-        break unless transactions_limit.zero? || transactions_n < transactions_limit
+    def each_batch_of_deposits(raise:, **options)
+      current_block_n = block_pointer()
+      highest_block_n = latest_block_number()
+      transactions_n = 0
+
+      while transactions_n <= 1000 && current_block_n < highest_block_n
+        current_block_n += 1
         begin
-          deposits            = nil
-          block_json          = json_rpc(:eth_getBlockByNumber, ["0x#{current_block_n.to_s(16)}", true]).fetch('result')
-          current_block_json  = block_json
-          latest_block_json   = block_json if latest_block_n == current_block_n
-          transactions_n     += block_json.fetch('transactions').count
-          deposits            = build_deposit_collection(block_json['transactions'], current_block_json, latest_block_json)
+          deposits = nil
+          block = json_rpc(:eth_getBlockByNumber, [hex(current_block_n), true]).fetch('result')
+          confirmations = highest_block_n - current_block_n,
+          transactions_n += block.fetch('transactions').count
+          deposits = build_deposit_collection(block, confirmations)
         rescue => e
           report_exception(e)
           raise e if raise
         end
         yield deposits if deposits && block_given?
-        collected       += deposits
-        current_block_n -= 1
+        block_pointer = current_block_n
       end
-
-      collected
     end
 
-    def build_deposit_collection(txs, current_block, latest_block)
-      txs.map do |tx|
+    def build_deposit_collection(block, confirmations)
+      block['transactions'].map do |tx|
         # Skip contract creation transactions.
         next if tx['to'].blank?
 
         # Skip outcomes (less than zero) and contract transactions (zero).
         next if tx.fetch('value').hex.to_d <= 0
 
-        { id:            normalize_txid(tx.fetch('hash')),
-          confirmations: latest_block.fetch('number').hex - current_block.fetch('number').hex,
-          received_at:   Time.at(current_block.fetch('timestamp').hex),
+        {
+          id:            normalize_txid(tx.fetch('hash')),
+          confirmations: confirmations,
+          received_at:   Time.at(block.fetch('timestamp').hex),
           entries:       [{ amount:  convert_from_base_unit(tx.fetch('value').hex),
-                            address: normalize_address(tx['to']) }] }
+                            address: normalize_address(tx['to']) }]
+        }
       end.compact
     end
 

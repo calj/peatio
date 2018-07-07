@@ -48,8 +48,8 @@ module CoinAPI
 
   protected
 
-    def build_deposit_collection(txs, current_block, latest_block)
-      txs.map do |tx|
+    def build_deposit_collection(block, confirmations)
+      block['transactions'].map do |tx|
         # Skip contract creation transactions.
         next if tx['to'].blank?
         next unless normalize_address(tx['to']) == contract_address
@@ -60,8 +60,8 @@ module CoinAPI
         arguments = abi_explode(tx['input'])[:arguments]
 
         { id:            normalize_txid(tx.fetch('hash')),
-          confirmations: latest_block.fetch('number').hex - current_block.fetch('number').hex,
-          received_at:   Time.at(current_block.fetch('timestamp').hex),
+          confirmations: confirmations,
+          received_at:   Time.at(block.fetch('timestamp').hex),
           entries:       [{ amount:  convert_from_base_unit(arguments[1].hex),
                             address: normalize_address('0x' + arguments[0][26..-1]) }] }
       end.compact

@@ -35,6 +35,14 @@ module CoinAPI
       @currency = currency
     end
 
+    def block_pointer
+      currency.blockchain.block_pointer.nil? ? -1 : currency.blockchain.block_pointer
+    end
+
+    def block_pointer=(value)
+      currency.blockchain.update!(block_pointer: value)
+    end
+
     #
     # Returns hot wallet balance.
     #
@@ -95,6 +103,14 @@ module CoinAPI
     # TODO: Doc.
     def inspect_address!(address)
       method_not_implemented
+    end
+
+    #
+    # Convert number to hex string
+    # ex: 42 becomes "0x2a"
+    #
+    def hex(number)
+      "0x#{ number.to_s(16) }"
     end
 
     def convert_to_base_unit!(value)

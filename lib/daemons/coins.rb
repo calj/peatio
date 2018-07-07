@@ -7,7 +7,7 @@ running = true
 Signal.trap(:TERM) { running = false }
 
 while running
-  Currency.coins.order(id: :asc).each do |currency|
+  Currency.coins.where(enabled: true).order(id: :asc).each do |currency|
     break unless running
     Rails.logger.info { "Processing #{currency.code.upcase} deposits." }
     client    = currency.api
@@ -20,7 +20,6 @@ while running
       Services::BlockchainTransactionHandler.new(currency).call(deposit)
       processed += 1
       Rails.logger.info { "Processed #{processed} #{currency.code.upcase} #{'deposit'.pluralize(processed)}." }
-      break if processed >= 100 || (received_at && received_at <= 1.hour.ago)
     end
     Rails.logger.info { "Finished processing #{currency.code.upcase} deposits." }
   rescue => e
