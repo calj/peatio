@@ -7,8 +7,16 @@ namespace :currencies do
     require 'yaml'
     Currency.transaction do
       YAML.load_file(Rails.root.join('config/seed/currencies.yml')).each do |hash|
-        next if Currency.exists?(id: hash.fetch('id'))
-        Currency.create!(hash)
+        unless Currency.exists?(id: hash.fetch('id'))
+          Currency.create!(hash)
+        end
+        if hash['type'] == 'coin'
+          blockchain_id = hash['options']['api_client'] == 'ERC20' ? 'eth' : hash['id']
+          blockchain = Blockchain.find_or_create_by(id: blockchain_id)
+          currency = Currency.find(hash['id'])
+          currency.blockchain = blockchain
+          currency.save!
+        end
       end
     end
   end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180704103131) do
+ActiveRecord::Schema.define(version: 20180707142007) do
 
   create_table "accounts", force: :cascade do |t|
     t.integer  "member_id",   limit: 4,                                          null: false
@@ -53,7 +53,15 @@ ActiveRecord::Schema.define(version: 20180704103131) do
   add_index "authentications", ["provider", "member_id"], name: "index_authentications_on_provider_and_member_id", unique: true, using: :btree
   add_index "authentications", ["provider", "uid"], name: "index_authentications_on_provider_and_uid", unique: true, using: :btree
 
+  create_table "blockchains", force: :cascade do |t|
+    t.integer  "block_pointer", limit: 4
+    t.integer  "block_number",  limit: 4
+    t.datetime "created_at",              null: false
+    t.datetime "updated_at",              null: false
+  end
+
   create_table "currencies", force: :cascade do |t|
+    t.string   "blockchain_id",        limit: 10
     t.string   "symbol",               limit: 1,                                               null: false
     t.string   "type",                 limit: 30,                             default: "coin", null: false
     t.decimal  "deposit_fee",                       precision: 32, scale: 16, default: 0.0,    null: false
