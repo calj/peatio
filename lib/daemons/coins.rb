@@ -7,6 +7,7 @@ running = true
 Signal.trap(:TERM) { running = false }
 
 while running
+  loop_processed = 0
   Currency.coins.where(enabled: true).order(id: :asc).each do |currency|
     break unless running
     Rails.logger.info { "Processing #{currency.code.upcase} deposits." }
@@ -22,8 +23,9 @@ while running
       Rails.logger.info { "Processed #{processed} #{currency.code.upcase} #{'deposit'.pluralize(processed)}." }
     end
     Rails.logger.info { "Finished processing #{currency.code.upcase} deposits." }
+    loop_processed += processed
   rescue => e
     report_exception(e)
   end
-  Kernel.sleep 5
+  Kernel.sleep(5) if loop_processed == 0
 end

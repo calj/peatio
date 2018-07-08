@@ -39,10 +39,6 @@ module CoinAPI
       currency.blockchain.block_pointer.nil? ? -1 : currency.blockchain.block_pointer
     end
 
-    def block_pointer=(value)
-      currency.blockchain.update!(block_pointer: value)
-    end
-
     #
     # Returns hot wallet balance.
     #

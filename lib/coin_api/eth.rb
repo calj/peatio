@@ -120,8 +120,8 @@ module CoinAPI
           raise e if raise
         end
         yield deposits if deposits && block_given?
-        block_pointer = current_block_n
       end
+      currency.blockchain.update!(block_pointer: current_block_n, block_number: highest_block_n)
     end
 
     def build_deposit_collection(block, confirmations)
